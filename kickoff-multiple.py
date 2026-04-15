@@ -15,6 +15,7 @@ PROMPTS = [
     "/codereview",
     "Analyse the files created by the codereview, adding a solution plan to each file.",
     "proceed with the recommended solution plan for each of them attached to each of the code-review files",
+    "Check if there isn't any changes unrelated to the ticket specified in cd ../tickets/{ticket_file}, if there are, revert them",
     "/prdescription",
     "Commit now your changes, but do not stage any .md file. Then push to origin and create a draft pull request with the description found in plan/3-pr-description.md, remember to include the code of the ticket in both title and description. After that add the PR link to the file ../tickets/prs.md, if there are already other urls there, just add it to the end of the file",
 ]

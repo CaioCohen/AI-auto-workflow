@@ -4,9 +4,11 @@ import time
 import pyautogui
 import pyperclip
 
+TICKET_FILE = "ticket-1.md"
+
 PROMPTS = [
     (
-        "read the ticket specified in cd ../tickets/ticket.md, then, go to master, "
+        "read the ticket specified in cd ../tickets/{TICKET_FILE}, then, go to master, "
         "fetch, pull, create a new branch from it and write a plan inside the "
         "plan/1-high-level-plan.md file on how to solve the issue. Everytime you see (subagent), run the command in the subagent."
     ),
@@ -15,6 +17,7 @@ PROMPTS = [
     "/codereview",
     "Analyse the files created by the codereview, adding a solution plan to each file.",
     "proceed with the recommended solution plan for each of them attached to each of the code-review files",
+    "Check if there isn't any changes unrelated to the ticket specified in cd ../tickets/{TICKET_FILE}, if there are, revert them",
     "/prdescription",
     "Commit now your changes, but do not stage any .md file. Then push to origin and create a draft pull request with the description found in plan/3-pr-description.md, remember to include the code of the ticket in both title and description",
 ]
@@ -132,7 +135,8 @@ def main():
     center_x, center_y = screen_w // 2, screen_h // 2
 
     for i, prompt in enumerate(PROMPTS, 1):
-        resolved = resolve_prompt(prompt)
+        prompt_filled = prompt.format(TICKET_FILE=TICKET_FILE)
+        resolved = resolve_prompt(prompt_filled)
         full_prompt = resolved + READY_INSTRUCTION
         preview = full_prompt[:55] + "..." if len(full_prompt) > 55 else full_prompt
         if resolved != prompt:
