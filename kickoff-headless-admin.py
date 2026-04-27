@@ -3,13 +3,13 @@ import shlex
 import subprocess
 import sys
 
-TICKET_FILE = "ticket.md"
+TICKET_FILE = "ticket-1.md"
 
 PROMPTS = [
     (
-        "read the ticket specified in cd ../tickets/{TICKET_FILE}, then, go to master (if there are any uncommited changes, discard them), "
+        "read the ticket specified in cd ../tickets/{TICKET_FILE}, then, go to main branch (if there are any uncommited changes, discard them, but keep the .gitignore), "
         "fetch, pull, create a new branch from it and write a plan inside the "
-        "plan/1-high-level-plan.md file on how to solve the issue. Everytime you see (subagent), run the command in the subagent."
+        "plan/1-high-level-plan.md file on how to solve the issue (if the file doesn't exist, create it). Everytime you see (subagent), run the command in the subagent."
     ),
     "/plan",
     "proceed with the implementation then as planned",
@@ -21,8 +21,8 @@ PROMPTS = [
     "Commit now your changes, but do not stage any .md file. Then push to origin and create a draft pull request with the description found in plan/3-pr-description.md, remember to include the code of the ticket in both title and description",
 ]
 
-FRONTEND_DIR_WSL = "~/puzzle/frontend"
-COMMANDS_DIR_WSL = "~/puzzle/frontend/.cursor/commands"
+ADMIN_DIR_WSL = "~/puzzle/admin"
+COMMANDS_DIR_WSL = "~/puzzle/admin/.cursor/commands"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TICKET_PATH = os.path.join(SCRIPT_DIR, "ticket.md")
 
@@ -35,7 +35,7 @@ AGENT_INSTRUCTION = (
 
 
 def load_command(name: str) -> str | None:
-    """Load a Cursor command from frontend .cursor/commands/<name>.md via WSL."""
+    """Load a Cursor command from admin .cursor/commands/<name>.md via WSL."""
     r = subprocess.run(
         ["wsl", "-e", "bash", "-c", f"cat {COMMANDS_DIR_WSL}/{name}.md 2>/dev/null"],
         capture_output=True,
@@ -61,7 +61,7 @@ def run_agent_prompt(prompt: str, *, continue_session: bool = False) -> int:
     programmatically as CLI arguments — no GUI window or copy-paste needed.
     Session context is preserved across prompts via --continue.
     """
-    agent_cmd = f"agent -p --force --trust --workspace {FRONTEND_DIR_WSL}"
+    agent_cmd = f"agent -p --force --trust --workspace {ADMIN_DIR_WSL}"
     if continue_session:
         agent_cmd += " --continue"
     agent_cmd += f" {shlex.quote(prompt)}"

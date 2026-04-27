@@ -1,36 +1,25 @@
-import os
 import shlex
 import subprocess
 import sys
 
-TICKET_FILE = "ticket.md"
+BRANCH_NAME = "CORE-7231-update-all-ledger-account-selectors-to-use-consistent-dropdown-menu"
 
 PROMPTS = [
-    (
-        "read the ticket specified in cd ../tickets/{TICKET_FILE}, then, go to master (if there are any uncommited changes, discard them), "
-        "fetch, pull, create a new branch from it and write a plan inside the "
-        "plan/1-high-level-plan.md file on how to solve the issue. Everytime you see (subagent), run the command in the subagent."
-    ),
-    "/plan",
-    "proceed with the implementation then as planned",
-    "/codereview",
-    "Analyse the files created by the codereview, adding a solution plan to each file.",
-    "proceed with the recommended solution plan for each of them attached to each of the code-review files",
-    "Check if there isn't any changes unrelated to the ticket specified in cd ../tickets/{TICKET_FILE}, if there are, revert them",
-    "/prdescription",
-    "Commit now your changes, but do not stage any .md file. Then push to origin and create a draft pull request with the description found in plan/3-pr-description.md, remember to include the code of the ticket in both title and description",
+    "Go to the branch: {BRANCH_NAME} and fetch and pull to get it up to date with remote",
+    "/personal/getContext",
+    "Now, I want you to run: pnpm dev:app:prod in the root. This command should take from 10 to 20 minutes to finish, just wait, return when the build has finished already. If it fails, fix the issue and run the command again.",
+    "/personal/openBrowser",
+    "Perform the manual tests specified in the Pull Request description. If you go to a page and there is no data available, try broadening the filters, starting with the daterange. Add the results of the tests in the plan/5-manual-test-report.md file.",
+    "read the plan/5-manual-test-report.md file, if any test has failed, analyse the problem and add to the file a proposed solution to fix it (but do not fix it yet). If all tests have passed, just say so.",
 ]
 
 FRONTEND_DIR_WSL = "~/puzzle/frontend"
 COMMANDS_DIR_WSL = "~/puzzle/frontend/.cursor/commands"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-TICKET_PATH = os.path.join(SCRIPT_DIR, "ticket.md")
 
 AGENT_INSTRUCTION = (
     " Do not ask questions about design choice to the user, make them yourself."
     " If you were to give options to the user, just follow the one you would recommend."
-    " After you've finished everything, and I mean literally everything,"
-    " even the audit and other commands that you should run, just stop."
+    " After you've finished all the testing steps, just stop."
 )
 
 
@@ -65,30 +54,22 @@ def run_agent_prompt(prompt: str, *, continue_session: bool = False) -> int:
     if continue_session:
         agent_cmd += " --continue"
     agent_cmd += f" {shlex.quote(prompt)}"
-    result = subprocess.run(["wsl", "-e", "bash", "-lc", agent_cmd])
-    return result.returncode
 
+    wsl_cmd = ["wsl", "-e", "bash", "-lc", agent_cmd]
+    print(f"  > {' '.join(wsl_cmd[:4])} ...", flush=True)
 
-def update_ticket_progress(prompt_label: str) -> None:
-    """Append a sent prompt to the progress section at the bottom of the ticket file."""
-    try:
-        with open(TICKET_PATH, "r", encoding="utf-8") as f:
-            content = f.read()
-    except OSError:
-        return
-
-    if "## Progress" not in content:
-        content = content.rstrip() + "\n\n## Progress\n"
-
-    content += f"- [x] {prompt_label}\n"
-
-    with open(TICKET_PATH, "w", encoding="utf-8") as f:
-        f.write(content)
+    proc = subprocess.Popen(
+        wsl_cmd,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        bufsize=0,
+    )
+    return proc.wait()
 
 
 def main():
     for i, prompt in enumerate(PROMPTS, 1):
-        prompt_filled = prompt.format(TICKET_FILE=TICKET_FILE)
+        prompt_filled = prompt.format(BRANCH_NAME=BRANCH_NAME)
         resolved = resolve_prompt(prompt_filled)
         full_prompt = resolved + AGENT_INSTRUCTION
 
@@ -103,8 +84,6 @@ def main():
         if returncode != 0:
             print(f"Agent exited with code {returncode}. Aborting.", flush=True)
             sys.exit(returncode)
-
-        update_ticket_progress(prompt)
 
     print("All prompts sent and completed. Done.", flush=True)
 
